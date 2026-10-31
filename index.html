@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>প্রফেশনাল ক্লাউড অ্যাকাউন্টিং ও মেমো সিস্টেম</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+        body { font-family: 'Hind Siliguri', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Login Screen Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <i class="fa-solid fa-calculator text-4xl text-emerald-600"></i>
+                <h2 class="text-2xl font-bold text-slate-800">সিস্টেম লগইন</h2>
+                <p class="text-xs text-slate-500" id="loginOrgDisplay">আপনার প্রতিষ্ঠানের হিসাব খাতা</p>
+                <p class="text-[11px] text-amber-600 bg-amber-50 py-1 rounded">ডিফল্ট অ্যাডমিন আইডি: <b>admin</b> | পাসওয়ার্ড: <b>1234</b></p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ইউজার আইডি / নাম</label>
+                    <input type="text" id="loginUser" placeholder="যেমন: admin" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">পাসওয়ার্ড / পিন</label>
+                    <input type="password" id="loginPass" placeholder="••••" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg text-sm transition shadow-md">
+                    প্রবেশ করুন
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <i class="fa-solid fa-calculator text-2xl text-emerald-400"></i>
+                <h1 class="text-xl font-bold tracking-wide" id="globalOrgName">হিসাব খাতা</h1>
+            </div>
+            
+            <div class="flex items-center space-x-3 space-x-reverse text-sm mt-2 sm:mt-0">
+                <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                    <i class="fa-solid fa-user text-emerald-400"></i>
+                    <span id="activeUserName" class="font-medium text-emerald-300">Admin</span>
+                    <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300" id="activeUserRoleBadge">Admin</span>
+                </div>
+                <button onclick="handleLogout()" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 text-xs">
+                    <i class="fa-solid fa-right-from-bracket"></i> লগআউট
+                </button>
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <nav class="bg-slate-800 border-t border-slate-700 overflow-x-auto no-print">
+            <div class="max-w-7xl mx-auto px-4 flex space-x-1 space-x-reverse text-sm font-medium">
+                <button onclick="switchTab('journal')" id="tab-journal" class="tab-btn px-4 py-2.5 text-emerald-400 border-b-2 border-emerald-400 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-pen-to-square"></i> জাবেদা
+                </button>
+                <button onclick="switchTab('invoice')" id="tab-invoice" class="tab-btn px-4 py-2.5 text-slate-300 hover:text-white flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> মেমো / ইনভয়েস
+                </button>
+                <button onclick="switchTab('ledger')" id="tab-ledger" class="tab-btn px-4 py-2.5 text-slate-300 hover:text-white flex items-center gap-2 whitespace-nowrap admin-manager-only">
+                    <i class="fa-solid fa-book"></i> খতিয়ান
+                </button>
+                <button onclick="switchTab('trial')" id="tab-trial" class="tab-btn px-4 py-2.5 text-slate-300 hover:text-white flex items-center gap-2 whitespace-nowrap admin-manager-only">
+                    <i class="fa-solid fa-scale-balanced"></i> রেওয়ামিল
+                </button>
+                <button onclick="switchTab('final')" id="tab-final" class="tab-btn px-4 py-2.5 text-slate-300 hover:text-white flex items-center gap-2 whitespace-nowrap admin-only">
+                    <i class="fa-solid fa-chart-pie"></i> ফাইনাল অ্যাকাউন্টস
+                </button>
+                <button onclick="switchTab('accounts')" id="tab-accounts" class="tab-btn px-4 py-2.5 text-slate-300 hover:text-white flex items-center gap-2 whitespace-nowrap admin-only">
+                    <i class="fa-solid fa-list-check"></i> হেড ও অ্যাকাউন্টসেটআপ
+                </button>
+                <button onclick="switchTab('setup')" id="tab-setup" class="tab-btn px-4 py-2.5 text-slate-300 hover:text-white flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-gear"></i> সেটিংস ও ইউজার
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Central Organization Banner -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center space-y-1">
+            <h2 class="text-3xl font-extrabold text-slate-900 tracking-wide invoiceOrgName" style="font-size: 2rem;">আপনার ব্যবসা প্রতিষ্ঠানের নাম</h2>
+            <p class="text-sm font-medium text-slate-600 invoiceOrgDetails">ঠিকানা ও মোবাইল নম্বর</p>
+        </div>
+
+        <!-- Global Date Filter & Search -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">
+            <div class="flex items-center gap-2 text-slate-700 font-semibold text-sm">
+                <i class="fa-solid fa-filter text-emerald-600"></i>
+                <span>তারিখ ও সার্চ ফিল্টার:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="relative">
+                    <input type="text" id="searchInput" onkeyup="renderJournalTable()" placeholder="সার্চ করুন..." class="border border-slate-300 rounded-lg px-3 py-1.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-emerald-500 w-48">
+                    <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+                <div class="flex items-center gap-1 text-sm">
+                    <label class="text-slate-600 text-xs">হতে:</label>
+                    <input type="date" id="fromDate" onchange="renderJournalTable()" class="border border-slate-300 rounded-lg px-2 py-1.5 outline-none text-xs">
+                </div>
+                <div class="flex items-center gap-1 text-sm">
+                    <label class="text-slate-600 text-xs">পর্যন্ত:</label>
+                    <input type="date" id="toDate" onchange="renderJournalTable()" class="border border-slate-300 rounded-lg px-2 py-1.5 outline-none text-xs">
+                </div>
+                <button onclick="renderJournalTable()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">ফিল্টার</button>
+                <button onclick="clearFilter()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">রিসেট</button>
+            </div>
+        </div>
+
+        <!-- 1. JOURNAL TAB -->
+        <section id="sec-journal" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2" id="formTitle">
+                    <i class="fa-solid fa-plus-circle text-emerald-600"></i> নতুন জাবেদা এন্ট্রি (Journal Entry)
+                </h3>
+                <form id="journalForm" onsubmit="handleJournalSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="editJournalId" value="">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">তারিখ</label>
+                            <input type="date" id="jDate" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ডেবিট অ্যাকাউন্ট</label>
+                            <select id="jDebitAcc" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none acc-select"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ক্রেডিট অ্যাকাউন্ট</label>
+                            <select id="jCreditAcc" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none acc-select"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">টাকার পরিমাণ (৳)</label>
+                            <input type="number" step="0.01" min="1" id="jAmount" placeholder="0.00" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">বিবরণ (Narration)</label>
+                        <input type="text" id="jNarration" placeholder="লেনদেনের সংক্ষিপ্ত বিবরণ..." class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" id="cancelEditBtn" onclick="resetJournalForm()" class="hidden bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded-lg text-sm font-semibold">বাতিল</button>
+                        <button type="submit" id="saveJournalBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-save"></i> জাবেদা সেভ করুন
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="pdf-journal">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <h4 class="font-bold text-slate-700">জাবেদা বই (General Journal)</h4>
+                    <button onclick="downloadPDF('pdf-journal', 'Journal-Report')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1 rounded text-xs flex items-center gap-1 no-print">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> PDF ডাউনলোড
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">তারিখ</th>
+                                <th class="p-3">বিবরণ ও হিসাব</th>
+                                <th class="p-3">ইউজার আইডি</th>
+                                <th class="p-3 text-right">ডেবিট (৳)</th>
+                                <th class="p-3 text-right">ক্রেডিট (৳)</th>
+                                <th class="p-3 text-center no-print">অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journalTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. SALES INVOICE / MEMO TAB -->
+        <section id="sec-invoice" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 md:col-span-1 no-print">
+                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-receipt text-emerald-600"></i> ক্যাশ মেমো ও প্রোডাক্ট বিক্রি
+                    </h3>
+                    <form onsubmit="generateInvoice(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">কাস্টমার নাম</label>
+                            <input type="text" id="invCustomer" placeholder="যেমন: আব্দুর রহিম" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">তারিখ</label>
+                            <input type="date" id="invDate" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">পেমেন্ট ধরণ</label>
+                            <select id="invType" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                                <option value="Cash">নগদ (Cash)</option>
+                                <option value="AR">বাকি (Accounts Receivable)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">বিক্রিত প্রোডাক্ট / অ্যাকাউন্ট সিলেক্ট করুন</label>
+                            <select id="invProductAcc" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none revenue-acc-select">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">টাকা (৳)</label>
+                            <input type="number" step="0.01" min="1" id="invAmount" placeholder="0.00" required class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-sm transition">
+                            মেমো জেনারেট ও অটো-জাবেদা করুন
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 md:col-span-2" id="printableInvoice">
+                    <div class="border-b pb-4 mb-4 text-center">
+                        <h2 class="text-2xl font-bold text-slate-800 invoiceOrgName">প্রতিষ্ঠানের নাম</h2>
+                        <p class="text-xs text-slate-500 invoiceOrgDetails">ঠিকানা</p>
+                        <span class="inline-block bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-xs font-bold mt-2">ক্যাশ মেমো</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-600 mb-4">
+                        <div>
+                            <p><strong>গ্রাহক:</strong> <span id="memoCustomer">----------------</span></p>
+                            <p><strong>মেমো নং:</strong> <span id="memoNo">INV-XXXX</span></p>
+                        </div>
+                        <div class="text-right">
+                            <p><strong>তারিখ:</strong> <span id="memoDate">DD/MM/YYYY</span></p>
+                            <p><strong>পেমেন্ট:</strong> <span id="memoType">N/A</span></p>
+                        </div>
+                    </div>
+                    <table class="w-full text-left text-xs mb-6 border border-slate-200">
+                        <thead class="bg-slate-100">
+                            <tr><th class="p-2 border">প্রোডাক্ট / অ্যাকাউন্ট বিবরণ</th><th class="p-2 border text-right">পরিমাণ (৳)</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="p-2 border" id="memoProdName">পণ্য বিক্রয়</td><td class="p-2 border text-right" id="memoAmount">0.00</td></tr>
+                        </tbody>
+                        <tfoot class="font-bold bg-slate-50">
+                            <tr><td class="p-2 border text-right">সর্বমোট:</td><td class="p-2 border text-right" id="memoTotal">0.00</td></tr>
+                        </tfoot>
+                    </table>
+                    <div class="flex justify-between items-end pt-8 text-xs text-slate-500">
+                        <div class="text-center border-t border-slate-300 w-28 pt-1">গ্রাহকের স্বাক্ষর</div>
+                        <div class="text-center border-t border-slate-300 w-28 pt-1">বিক্রেতার স্বাক্ষর</div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-2 no-print">
+                        <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-1.5 rounded text-xs"><i class="fa-solid fa-print"></i> প্রিন্ট</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. LEDGER TAB -->
+        <section id="sec-ledger" class="tab-content hidden space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4 no-print">
+                <label class="font-bold text-sm text-slate-700">খতিয়ান হিসাব:</label>
+                <select id="ledgerSelect" onchange="renderLedger()" class="border border-slate-300 rounded-lg p-2 text-sm outline-none acc-select md:w-64"></select>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="pdf-ledger">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-base" id="ledgerTitle">খতিয়ান হিসাব</h3>
+                    <button onclick="downloadPDF('pdf-ledger', 'Ledger-Report')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1 rounded text-xs flex items-center gap-1 no-print">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> PDF
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                            <tr><th class="p-3">তারিখ</th><th class="p-3">বিবরণ</th><th class="p-3 text-right">ডেবিট (৳)</th><th class="p-3 text-right">ক্রেডিট (৳)</th><th class="p-3 text-right">জের (৳)</th></tr>
+                        </thead>
+                        <tbody id="ledgerTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. TRIAL BALANCE TAB -->
+        <section id="sec-trial" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="pdf-trial">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-base">রেওয়ামিল (Trial Balance - মূল হেড অনুযায়ী)</h3>
+                    <button onclick="downloadPDF('pdf-trial', 'Trial-Balance')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1 rounded text-xs flex items-center gap-1 no-print">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> PDF
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                            <tr><th class="p-3">মূল হেড (Parent Head)</th><th class="p-3 text-right">ডেবিট (৳)</th><th class="p-3 text-right">ক্রেডিট (৳)</th></tr>
+                        </thead>
+                        <tbody id="trialTableBody" class="divide-y divide-slate-100"></tbody>
+                        <tfoot class="bg-slate-800 text-white font-bold">
+                            <tr><td class="p-3 text-right">সর্বমোট:</td><td class="p-3 text-right" id="tbTotalDebit">0.00</td><td class="p-3 text-right" id="tbTotalCredit">0.00</td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. FINAL ACCOUNTS TAB -->
+        <section id="sec-final" class="tab-content hidden space-y-6">
+            <div class="flex justify-end no-print">
+                <button onclick="downloadPDF('pdf-final', 'Final-Accounts')" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded text-xs flex items-center gap-1 shadow-sm">
+                    <i class="fa-solid fa-file-pdf text-red-400"></i> ফাইনাল অ্যাকাউন্টস PDF
+                </button>
+            </div>
+            <div id="pdf-final" class="space-y-6">
+                <!-- Income Statement -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-800 text-white font-bold text-sm">বিষদ আয় বিবরণী (Income Statement)</div>
+                    <div class="p-4 space-y-4 text-sm">
+                        <div>
+                            <span class="font-bold text-slate-700 block mb-2">রাজস্ব ও বিক্রয় হেডসমূহ:</span>
+                            <div id="revenueHeadsList" class="pl-4 space-y-1 border-l-2 border-emerald-500"></div>
+                        </div>
+                        <div class="flex justify-between border-t pt-2 font-semibold">
+                            <span>মোট রাজস্ব (Total Revenue):</span>
+                            <span class="text-emerald-600" id="isRevenue">0.00</span>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700 block mb-2">পরিচালন ব্যয় হেডসমূহ:</span>
+                            <div id="expenseHeadsList" class="pl-4 space-y-1 border-l-2 border-red-500"></div>
+                        </div>
+                        <div class="flex justify-between border-t pt-2 font-semibold">
+                            <span>মোট খরচ (Total Expenses):</span>
+                            <span class="text-red-600" id="isTotalExpense">0.00</span>
+                        </div>
+                        <div class="flex justify-between pt-2 text-base font-extrabold bg-slate-50 p-2 rounded">
+                            <span>নিট লাভ / ক্ষতি (Net Profit / Loss):</span>
+                            <span id="isNetProfit" class="text-emerald-700">0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Owner's Equity Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-800 text-white font-bold text-sm">মালিকানাস্বত্ব বিবরণী (Owner's Equity)</div>
+                    <div class="p-4 space-y-3 text-sm">
+                        <div class="flex justify-between border-b pb-2"><span>প্রারম্ভিক মূলধন:</span><span class="font-semibold" id="eqOpening">0.00</span></div>
+                        <div class="flex justify-between border-b pb-2"><span>যোগ: নিট লাভ:</span><span class="font-semibold text-emerald-600" id="eqNetProfit">0.00</span></div>
+                        <div class="flex justify-between pt-2 text-base font-extrabold bg-slate-50 p-2 rounded"><span>সমাপনী মূলধন:</span><span id="eqEnding">0.00</span></div>
+                    </div>
+                </div>
+
+                <!-- Standard Balance Sheet -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-900 text-white font-bold text-sm">উদ্বৃত্তপত্র / ব্যালেন্স শীট (Balance Sheet)</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 text-sm">
+                        <div class="p-4">
+                            <h4 class="font-bold text-slate-800 border-b pb-2 mb-3 text-emerald-700">সম্পদসমূহ (Assets)</h4>
+                            <div id="bsAssetsList" class="space-y-2"></div>
+                            <div class="flex justify-between font-bold border-t pt-3 mt-4 text-slate-900"><span>মোট সম্পদ:</span><span id="bsTotalAssets">0.00</span></div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold text-slate-800 border-b pb-2 mb-3 text-blue-700">দায় ও মালিকানাস্বত্ব</h4>
+                            <div id="bsLiabEquityList" class="space-y-2"></div>
+                            <div class="flex justify-between font-bold border-t pt-3 mt-4 text-slate-900"><span>মোট দায় ও ইকুইটি:</span><span id="bsTotalLiabEquity">0.00</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. ACCOUNTS HEAD & SUB-ACCOUNT MANAGEMENT TAB -->
+        <section id="sec-accounts" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Step 1: Create Parent Head -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-folder-plus text-emerald-600"></i> ধাপ ১: মূল হেড (Parent Head) তৈরি করুন
+                    </h3>
+                    <form onsubmit="handleAddParentHead(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">টপ হেড (Type)</label>
+                            <select id="headType" class="w-full border p-2 rounded text-sm outline-none">
+                                <option value="Asset">সম্পদ (Asset)</option>
+                                <option value="Liability">দায় (Liability)</option>
+                                <option value="Equity">মালিকানাস্বত্ব (Equity)</option>
+                                <option value="Revenue">আয় (Revenue)</option>
+                                <option value="Expense">ব্যয় (Expense)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">মূল হেডের নাম (যেমন: পণ্য ক্রয় বা বেতন খরচ)</label>
+                            <input type="text" id="parentHeadName" placeholder="হেডের নাম লিখুন" required class="w-full border p-2 rounded text-sm outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2 rounded text-sm font-semibold">মূল হেড সেভ করুন</button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Create Sub-Account under Selected Head -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-file-circle-plus text-emerald-600"></i> ধাপ ২: নির্দিষ্ট অ্যাকাউন্ট বা নাম তৈরি করুন
+                    </h3>
+                    <form onsubmit="handleAddSubAccount(event)" class="space-y-3">
+                        <input type="hidden" id="editAccId" value="">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">বিদ্যমান মূল হেড সিলেক্ট করুন</label>
+                            <select id="existingParentHead" required class="w-full border p-2 rounded text-sm outline-none">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">নির্দিষ্ট অ্যাকাউন্ট / প্রডাক্ট নাম (যেমন: নাফিজ)</label>
+                            <input type="text" id="subAccName" placeholder="নাম লিখুন" required class="w-full border p-2 rounded text-sm outline-none">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" id="cancelAccEditBtn" onclick="resetAccForm()" class="hidden bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded text-sm font-semibold">বাতিল</button>
+                            <button type="submit" id="saveAccBtn" class="flex-grow bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-sm font-semibold">অ্যাকাউন্ট সেভ করুন</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- List of All Created Accounts with Edit & Delete -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b font-bold text-slate-700">আপনার তৈরি করা সকল হেড ও অ্যাকাউন্ট তালিকা</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="p-3">টপ হেড (Type)</th>
+                            <th class="p-3">মূল হেড (Parent Head)</th>
+                            <th class="p-3">অ্যাকাউন্ট / প্রডাক্ট নাম (Sub-Account)</th>
+                            <th class="p-3 text-center">অ্যাকশন (Edit / Delete)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsChartBody" class="divide-y"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 7. SETTINGS & USER MANAGEMENT TAB -->
+        <section id="sec-setup" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-2xl mx-auto space-y-6">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 mb-3"><i class="fa-solid fa-store text-emerald-600"></i> প্রতিষ্ঠানের তথ্য</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="setOrgName" placeholder="দোকান বা প্রতিষ্ঠানের নাম" class="w-full border p-2.5 rounded text-sm outline-none">
+                        <input type="text" id="setOrgDetails" placeholder="ঠিকানা ও মোবাইল নম্বর" class="w-full border p-2.5 rounded text-sm outline-none">
+                        <button onclick="saveOrgSettings()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-xs font-semibold">আপডেট করুন</button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <div id="adminCreateUserSec" class="admin-only">
+                    <h3 class="text-base font-bold text-slate-800 mb-3"><i class="fa-solid fa-user-plus text-emerald-600"></i> নতুন ইউজার আইডি তৈরি করুন (Admin Only)</h3>
+                    <form onsubmit="handleAdminCreateUser(event)" class="space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="newUsername" placeholder="ইউজার আইডি (যেমন: manager2)" required class="border p-2.5 rounded text-sm outline-none">
+                            <select id="newUserRole" class="border p-2.5 rounded text-sm outline-none">
+                                <option value="Manager">Manager (হিসাবরক্ষক)</option>
+                                <option value="Staff">Staff (স্টাফ)</option>
+                                <option value="Admin">Admin (অ্যাডমিন)</option>
+                            </select>
+                        </div>
+                        <input type="password" id="newUserPass" placeholder="পাসওয়ার্ড দিন" required class="w-full border p-2.5 rounded text-sm outline-none">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-xs font-semibold">নতুন আইডি তৈরি করুন</button>
+                    </form>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 mb-3"><i class="fa-solid fa-key text-amber-500"></i> নিজের পাসওয়ার্ড পরিবর্তন করুন</h3>
+                    <div class="space-y-3">
+                        <input type="password" id="newPasswordInput" placeholder="নতুন পাসওয়ার্ড দিন" class="w-full border p-2.5 rounded text-sm outline-none">
+                        <button onclick="changeUserPassword()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-xs font-semibold">পাসওয়ার্ড পরিবর্তন করুন</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- App JavaScript Logic -->
+    <script>
+        let accounts = [
+            { id: 1, type: 'Asset', parentHead: 'নগদ হিসাব', name: 'নগদ ক্যাশ ড্রয়ার' },
+            { id: 2, type: 'Asset', parentHead: 'ব্যাংক হিসাব', name: 'ব্র্যাক ব্যাংক' },
+            { id: 3, type: 'Asset', parentHead: 'প্রাপ্য হিসাব', name: 'বাকি কাস্টমার' },
+            { id: 4, type: 'Liability', parentHead: 'প্রদেয় হিসাব', name: 'সাপ্লায়ার দেনা' },
+            { id: 5, type: 'Equity', parentHead: 'মূলধন হিসাব', name: 'মালিকের মূলধন' },
+            { id: 6, type: 'Revenue', parentHead: 'পণ্য বিক্রয়', name: 'সাধারণ পণ্য বিক্রয়' },
+            { id: 7, type: 'Expense', parentHead: 'পণ্য ক্রয়', name: 'জেনারেল মেডিসিন ক্রয়' },
+            { id: 8, type: 'Expense', parentHead: 'বেতন খরচ', name: 'স্টাফ বেতন' }
+        ];
+
+        let journals = [];
+        let currentUser = null;
+
+        window.onload = function() {
+            document.getElementById('jDate').valueAsDate = new Date();
+            document.getElementById('invDate').valueAsDate = new Date();
+            
+            const savedAccs = localStorage.getItem('local_accounts_v5');
+            if(savedAccs) accounts = JSON.parse(savedAccs);
+
+            if(!localStorage.getItem('pass_admin')) {
+                localStorage.setItem('pass_admin', '1234');
+                localStorage.setItem('role_admin', 'Admin');
+            }
+
+            const savedUser = localStorage.getItem('active_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('loginModal').classList.add('hidden');
+            }
+
+            updateUserInterface();
+            loadOrgSettings();
+            loadAllData();
+        };
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUser').value.trim().toLowerCase();
+            const pass = document.getElementById('loginPass').value;
+            
+            const storedPass = localStorage.getItem('pass_' + username);
+            if (!storedPass || storedPass !== pass) {
+                alert('ভুল ইউজার আইডি বা পাসওয়ার্ড দিয়েছেন!');
+                return;
+            }
+
+            const storedRole = localStorage.getItem('role_' + username) || 'Staff';
+            currentUser = { name: username, role: storedRole };
+            localStorage.setItem('active_user', JSON.stringify(currentUser));
+            
+            document.getElementById('loginModal').classList.add('hidden');
+            updateUserInterface();
+            loadAllData();
+        }
+
+        function handleAdminCreateUser(e) {
+            e.preventDefault();
+            if(currentUser.role !== 'Admin') { alert('শুধু অ্যাডমিন আইডি তৈরি করতে পারবেন!'); return; }
+            const newName = document.getElementById('newUsername').value.trim().toLowerCase();
+            const newRole = document.getElementById('newUserRole').value;
+            const newPass = document.getElementById('newUserPass').value;
+
+            localStorage.setItem('pass_' + newName, newPass);
+            localStorage.setItem('role_' + newName, newRole);
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newUserPass').value = '';
+            alert(`সফলভাবে ইউজার [${newName}] তৈরি করা হয়েছে!`);
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('active_user');
+            location.reload();
+        }
+
+        function changeUserPassword() {
+            const newPass = document.getElementById('newPasswordInput').value.trim();
+            if(!newPass) return;
+            localStorage.setItem('pass_' + currentUser.name, newPass);
+            alert('পাসওয়ার্ড পরিবর্তিত হয়েছে!');
+            document.getElementById('newPasswordInput').value = '';
+        }
+
+        function updateUserInterface() {
+            if(!currentUser) return;
+            document.getElementById('activeUserName').innerText = currentUser.name;
+            document.getElementById('activeUserRoleBadge').innerText = currentUser.role;
+            const role = currentUser.role;
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = (role === 'Admin') ? 'block' : 'none');
+            document.querySelectorAll('.admin-manager-only').forEach(el => el.style.display = (role === 'Admin' || role === 'Manager') ? 'block' : 'none');
+        }
+
+        function loadOrgSettings() {
+            const orgName = localStorage.getItem('org_name') || 'আপনার ব্যবসা প্রতিষ্ঠানের নাম';
+            const orgDetails = localStorage.getItem('org_details') || 'মিরপুর, ঢাকা | মোবাইল: ০১৭০০-০০০০০';
+            document.getElementById('globalOrgName').innerText = orgName;
+            document.getElementById('loginOrgDisplay').innerText = orgName;
+            document.querySelectorAll('.invoiceOrgName').forEach(el => el.innerText = orgName);
+            document.querySelectorAll('.invoiceOrgDetails').forEach(el => el.innerText = orgDetails);
+            if(document.getElementById('setOrgName')) {
+                document.getElementById('setOrgName').value = orgName !== 'আপনার ব্যবসা প্রতিষ্ঠানের নাম' ? orgName : '';
+                document.getElementById('setOrgDetails').value = orgDetails;
+            }
+        }
+
+        function saveOrgSettings() {
+            const name = document.getElementById('setOrgName').value.trim();
+            const details = document.getElementById('setOrgDetails').value.trim();
+            if(name) localStorage.setItem('org_name', name);
+            if(details) localStorage.setItem('org_details', details);
+            loadOrgSettings();
+            alert('প্রতিষ্ঠানের তথ্য আপডেট হয়েছে!');
+        }
+
+        function loadAllData() {
+            const localJ = localStorage.getItem('local_journals_v5');
+            journals = localJ ? JSON.parse(localJ) : [];
+            populateAccDropdowns();
+            populateParentHeadDropdown();
+            renderJournalTable();
+            renderAccountsChart();
+            renderLedger();
+            renderTrialBalance();
+            renderFinalAccounts();
+        }
+
+        function populateAccDropdowns() {
+            const selects = document.querySelectorAll('.acc-select');
+            selects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '';
+                accounts.forEach(acc => {
+                    select.innerHTML += `<option value="${acc.id}">[${acc.parentHead}] ➔ ${acc.name} (${acc.type})</option>`;
+                });
+                if(currentVal) select.value = currentVal;
+            });
+
+            const revSelect = document.querySelector('.revenue-acc-select');
+            if(revSelect) {
+                revSelect.innerHTML = '';
+                accounts.filter(a => a.type === 'Revenue').forEach(acc => {
+                    revSelect.innerHTML += `<option value="${acc.id}">[${acc.parentHead}] ➔ ${acc.name}</option>`;
+                });
+            }
+        }
+
+        function populateParentHeadDropdown() {
+            const existingParentSelect = document.getElementById('existingParentHead');
+            if(!existingParentSelect) return;
+            existingParentSelect.innerHTML = '';
+            
+            const uniqueHeads = {};
+            accounts.forEach(a => {
+                uniqueHeads[a.parentHead] = a.type;
+            });
+
+            for(let head in uniqueHeads) {
+                existingParentSelect.innerHTML += `<option value="${head}">[${uniqueHeads[head]}] ${head}</option>`;
+            }
+        }
+
+        function handleAddParentHead(e) {
+            e.preventDefault();
+            const type = document.getElementById('headType').value;
+            const parentHead = document.getElementById('parentHeadName').value.trim();
+
+            accounts.push({ id: Date.now(), type, parentHead, name: 'জেনারেল হেড অ্যাকাউন্ট' });
+            localStorage.setItem('local_accounts_v5', JSON.stringify(accounts));
+
+            loadAllData();
+            document.getElementById('parentHeadName').value = '';
+            alert('মূল হেড সফলভাবে তৈরি হয়েছে!');
+        }
+
+        function handleAddSubAccount(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editAccId').value;
+            const parentHead = document.getElementById('existingParentHead').value;
+            const name = document.getElementById('subAccName').value.trim();
+
+            const parentAcc = accounts.find(a => a.parentHead === parentHead);
+            const type = parentAcc ? parentAcc.type : 'Expense';
+
+            if(editId) {
+                accounts = accounts.map(a => a.id == editId ? { ...a, type, parentHead, name } : a);
+                alert('অ্যাকাউন্ট সফলভাবে আপডেট করা হয়েছে!');
+            } else {
+                accounts.push({ id: Date.now(), type, parentHead, name });
+                alert('নতুন অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে!');
+            }
+
+            localStorage.setItem('local_accounts_v5', JSON.stringify(accounts));
+            resetAccForm();
+            loadAllData();
+        }
+
+        function editAccount(id) {
+            const acc = accounts.find(a => a.id == id);
+            if(!acc) return;
+            document.getElementById('editAccId').value = acc.id;
+            document.getElementById('existingParentHead').value = acc.parentHead;
+            document.getElementById('subAccName').value = acc.name;
+            document.getElementById('saveAccBtn').innerText = 'আপডেট করুন';
+            document.getElementById('cancelAccEditBtn').classList.remove('hidden');
+            window.scrollTo({ top: 400, behavior: 'smooth' });
+        }
+
+        function deleteAccount(id) {
+            if(accounts.length <= 1) {
+                alert('অন্তত একটি অ্যাকাউন্ট থাকা আবশ্যক!');
+                return;
+            }
+            if(!confirm('এই অ্যাকাউন্টটি মুছে ফেলতে চান?')) return;
+            
+            const isUsed = journals.some(j => j.debit_account_id === id || j.credit_account_id === id);
+            if(isUsed) {
+                alert('এই অ্যাকাউন্টটিতে লেনদেন (জাবেদা) রয়েছে, তাই সরাসরি ডিলেট করা যাবে না!');
+                return;
+            }
+
+            accounts = accounts.filter(a => a.id !== id);
+            localStorage.setItem('local_accounts_v5', JSON.stringify(accounts));
+            loadAllData();
+            alert('অ্যাকাউন্টটি সফলভাবে মুছে ফেলা হয়েছে!');
+        }
+
+        function resetAccForm() {
+            document.getElementById('editAccId').value = '';
+            document.getElementById('subAccName').value = '';
+            document.getElementById('saveAccBtn').innerText = 'অ্যাকাউন্ট সেভ করুন';
+            document.getElementById('cancelAccEditBtn').classList.add('hidden');
+        }
+
+        function handleJournalSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editJournalId').value;
+            const date = document.getElementById('jDate').value;
+            const debitAccId = parseInt(document.getElementById('jDebitAcc').value);
+            const creditAccId = parseInt(document.getElementById('jCreditAcc').value);
+            const amount = parseFloat(document.getElementById('jAmount').value);
+            const narration = document.getElementById('jNarration').value;
+
+            if (debitAccId === creditAccId) {
+                alert('ডেবিট এবং ক্রেডিট অ্যাকাউন্ট একই হতে পারবে না!');
+                return;
+            }
+
+            const entryData = { date, debit_account_id: debitAccId, credit_account_id: creditAccId, amount, narration, created_by: currentUser.name };
+
+            if (editId) {
+                journals = journals.map(j => j.id == editId ? { ...j, ...entryData } : j);
+            } else {
+                entryData.id = Date.now();
+                journals.unshift(entryData);
+            }
+            localStorage.setItem('local_journals_v5', JSON.stringify(journals));
+            resetJournalForm();
+            loadAllData();
+        }
+
+        function editJournal(id) {
+            const j = journals.find(item => item.id == id);
+            if (!j) return;
+            document.getElementById('editJournalId').value = j.id;
+            document.getElementById('jDate').value = j.date;
+            document.getElementById('jDebitAcc').value = j.debit_account_id;
+            document.getElementById('jCreditAcc').value = j.credit_account_id;
+            document.getElementById('jAmount').value = j.amount;
+            document.getElementById('jNarration').value = j.narration || '';
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen text-amber-500"></i> জাবেদা এডিট করুন`;
+            document.getElementById('saveJournalBtn').innerText = `আপডেট করুন`;
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetJournalForm() {
+            document.getElementById('journalForm').reset();
+            document.getElementById('editJournalId').value = '';
+            document.getElementById('jDate').valueAsDate = new Date();
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-plus-circle text-emerald-600"></i> নতুন জাবেদা এন্ট্রি`;
+            document.getElementById('saveJournalBtn').innerHTML = `<i class="fa-solid fa-save"></i> জাবেদা সেভ করুন`;
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function renderJournalTable() {
+            const tbody = document.getElementById('journalTableBody');
+            tbody.innerHTML = '';
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            journals.forEach(j => {
+                const debitAcc = accounts.find(a => a.id === j.debit_account_id);
+                const creditAcc = accounts.find(a => a.id === j.credit_account_id);
+                const textMatch = !searchText || (j.narration && j.narration.toLowerCase().includes(searchText)) || (debitAcc && debitAcc.name.toLowerCase().includes(searchText));
+                const dateMatch = (!fromDate || j.date >= fromDate) && (!toDate || j.date <= toDate);
+
+                if (textMatch && dateMatch) {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 text-slate-600 whitespace-nowrap">${j.date}</td>
+                            <td class="p-3">
+                                <div class="font-bold text-slate-800">${debitAcc ? '['+debitAcc.parentHead+'] '+debitAcc.name : 'N/A'} (Dr.)</div>
+                                <div class="text-slate-600 pl-4">To ${creditAcc ? '['+creditAcc.parentHead+'] '+creditAcc.name : 'N/A'} (Cr.)</div>
+                                ${j.narration ? `<div class="text-xs text-slate-400 italic">(${j.narration})</div>` : ''}
+                            </td>
+                            <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-semibold">${j.created_by || 'admin'}</span></td>
+                            <td class="p-3 text-right font-semibold text-emerald-600">৳${j.amount.toFixed(2)}</td>
+                            <td class="p-3 text-right font-semibold text-slate-700">৳${j.amount.toFixed(2)}</td>
+                            <td class="p-3 text-center no-print space-x-1 space-x-reverse">
+                                ${currentUser.role === 'Admin' || currentUser.role === 'Manager' ? `<button onclick="editJournal(${j.id})" class="text-amber-500 hover:text-amber-700 text-xs"><i class="fa-solid fa-pen"></i></button>` : ''}
+                                ${currentUser.role === 'Admin' ? `<button onclick="deleteJournal(${j.id})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function deleteJournal(id) {
+            if (!confirm('এন্ট্রিটি মুছে ফেলতে চান?')) return;
+            journals = journals.filter(j => j.id !== id);
+            localStorage.setItem('local_journals_v5', JSON.stringify(journals));
+            loadAllData();
+        }
+
+        function generateInvoice(e) {
+            e.preventDefault();
+            const customer = document.getElementById('invCustomer').value;
+            const date = document.getElementById('invDate').value;
+            const type = document.getElementById('invType').value;
+            const prodAccId = parseInt(document.getElementById('invProductAcc').value);
+            const amount = parseFloat(document.getElementById('invAmount').value);
+
+            const selectedProd = accounts.find(a => a.id === prodAccId);
+            const prodName = selectedProd ? `[${selectedProd.parentHead}] ${selectedProd.name}` : 'পণ্য বিক্রয়';
+
+            document.getElementById('memoCustomer').innerText = customer;
+            document.getElementById('memoDate').innerText = date;
+            document.getElementById('memoType').innerText = type === 'Cash' ? 'নগদ' : 'বাকিতে';
+            document.getElementById('memoNo').innerText = 'INV-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('memoProdName').innerText = prodName;
+            document.getElementById('memoAmount').innerText = '৳' + amount.toFixed(2);
+            document.getElementById('memoTotal').innerText = '৳' + amount.toFixed(2);
+
+            const debitAccId = type === 'Cash' ? 1 : 3; 
+            const creditAccId = prodAccId; 
+
+            journals.unshift({
+                id: Date.now(),
+                date,
+                debit_account_id: debitAccId,
+                credit_account_id: creditAccId,
+                amount,
+                narration: `মেমো বিক্রয় - ${customer} (${prodName})`,
+                created_by: currentUser.name
+            });
+            localStorage.setItem('local_journals_v5', JSON.stringify(journals));
+            loadAllData();
+            alert('মেমো তৈরি হয়েছে এবং অটো-জাবেদা যুক্ত হয়েছে!');
+        }
+
+        function renderLedger() {
+            const selectAccId = parseInt(document.getElementById('ledgerSelect').value) || (accounts[0] ? accounts[0].id : 1);
+            const acc = accounts.find(a => a.id === selectAccId);
+            if (!acc) return;
+            document.getElementById('ledgerTitle').innerText = `খতিয়ান: [${acc.parentHead}] ${acc.name}`;
+            const tbody = document.getElementById('ledgerTableBody');
+            tbody.innerHTML = '';
+            let balance = 0;
+            const isDebitNormal = acc.type === 'Asset' || acc.type === 'Expense';
+
+            journals.slice().reverse().forEach(j => {
+                if (j.debit_account_id === selectAccId || j.credit_account_id === selectAccId) {
+                    const isDebit = j.debit_account_id === selectAccId;
+                    const amount = j.amount;
+                    balance += isDebitNormal ? (isDebit ? amount : -amount) : (isDebit ? -amount : amount);
+                    const oppAcc = accounts.find(a => a.id === (isDebit ? j.credit_account_id : j.debit_account_id));
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 text-slate-600">${j.date}</td>
+                            <td class="p-3">${oppAcc ? oppAcc.name : ''} ${j.narration ? `(${j.narration})` : ''}</td>
+                            <td class="p-3 text-right font-medium text-emerald-600">${isDebit ? '৳' + amount.toFixed(2) : '-'}</td>
+                            <td class="p-3 text-right font-medium text-slate-600">${!isDebit ? '৳' + amount.toFixed(2) : '-'}</td>
+                            <td class="p-3 text-right font-bold">৳${balance.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function renderTrialBalance() {
+            const tbody = document.getElementById('trialTableBody');
+            tbody.innerHTML = '';
+            let parentTotals = {};
+
+            accounts.forEach(acc => {
+                let drSum = 0, crSum = 0;
+                journals.forEach(j => {
+                    if (j.debit_account_id === acc.id) drSum += j.amount;
+                    if (j.credit_account_id === acc.id) crSum += j.amount;
+                });
+
+                let netDebit = 0, netCredit = 0;
+                if (acc.type === 'Asset' || acc.type === 'Expense') {
+                    if (drSum >= crSum) netDebit = drSum - crSum; else netCredit = crSum - drSum;
+                } else {
+                    if (crSum >= drSum) netCredit = crSum - drSum; else netDebit = drSum - crSum;
+                }
+
+                if(!parentTotals[acc.parentHead]) {
+                    parentTotals[acc.parentHead] = { type: acc.type, dr: 0, cr: 0 };
+                }
+                parentTotals[acc.parentHead].dr += netDebit;
+                parentTotals[acc.parentHead].cr += netCredit;
+            });
+
+            let totalDebit = 0, totalCredit = 0;
+            for(let pHead in parentTotals) {
+                let pData = parentTotals[pHead];
+                let netDr = pData.dr > pData.cr ? pData.dr - pData.cr : 0;
+                let netCr = pData.cr > pData.dr ? pData.cr - pData.dr : 0;
+
+                if(netDr > 0 || netCr > 0) {
+                    totalDebit += netDr;
+                    totalCredit += netCr;
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 font-bold text-slate-800">${pHead} <span class="text-xs font-normal text-slate-500">(${pData.type})</span></td>
+                            <td class="p-3 text-right font-semibold text-emerald-600">${netDr > 0 ? '৳' + netDr.toFixed(2) : '-'}</td>
+                            <td class="p-3 text-right font-semibold">${netCr > 0 ? '৳' + netCr.toFixed(2) : '-'}</td>
+                        </tr>
+                    `;
+                }
+            }
+            document.getElementById('tbTotalDebit').innerText = '৳' + totalDebit.toFixed(2);
+            document.getElementById('tbTotalCredit').innerText = '৳' + totalCredit.toFixed(2);
+        }
+
+        function renderFinalAccounts() {
+            let parentRevenues = {};
+            let parentExpenses = {};
+            let parentAssets = {};
+            let parentLiabilities = {};
+            let openingCapital = 0;
+
+            accounts.forEach(acc => {
+                let drSum = 0, crSum = 0;
+                journals.forEach(j => {
+                    if (j.debit_account_id === acc.id) drSum += j.amount;
+                    if (j.credit_account_id === acc.id) crSum += j.amount;
+                });
+
+                if (acc.type === 'Revenue') {
+                    let val = crSum - drSum;
+                    parentRevenues[acc.parentHead] = (parentRevenues[acc.parentHead] || 0) + val;
+                }
+                if (acc.type === 'Expense') {
+                    let val = drSum - crSum;
+                    parentExpenses[acc.parentHead] = (parentExpenses[acc.parentHead] || 0) + val;
+                }
+                if (acc.type === 'Asset') {
+                    let val = drSum - crSum;
+                    parentAssets[acc.parentHead] = (parentAssets[acc.parentHead] || 0) + val;
+                }
+                if (acc.type === 'Liability') {
+                    let val = crSum - drSum;
+                    parentLiabilities[acc.parentHead] = (parentLiabilities[acc.parentHead] || 0) + val;
+                }
+                if (acc.parentHead.toLowerCase().includes('মূলধন')) {
+                    openingCapital += (crSum - drSum);
+                }
+            });
+
+            let totalRevenue = 0, totalExpense = 0;
+            const revList = document.getElementById('revenueHeadsList');
+            const expList = document.getElementById('expenseHeadsList');
+            revList.innerHTML = ''; expList.innerHTML = '';
+
+            for(let head in parentRevenues) {
+                let val = parentRevenues[head];
+                if(val > 0) {
+                    totalRevenue += val;
+                    revList.innerHTML += `<div class="flex justify-between text-xs"><span>${head}:</span><span class="font-semibold text-emerald-600">৳${val.toFixed(2)}</span></div>`;
+                }
+            }
+            for(let head in parentExpenses) {
+                let val = parentExpenses[head];
+                if(val > 0) {
+                    totalExpense += val;
+                    expList.innerHTML += `<div class="flex justify-between text-xs"><span>${head}:</span><span class="font-semibold text-red-600">৳${val.toFixed(2)}</span></div>`;
+                }
+            }
+
+            const netProfit = totalRevenue - totalExpense;
+            const endingEquity = openingCapital + netProfit;
+
+            document.getElementById('isRevenue').innerText = '৳' + totalRevenue.toFixed(2);
+            document.getElementById('isTotalExpense').innerText = '৳' + totalExpense.toFixed(2);
+            document.getElementById('isNetProfit').innerText = '৳' + netProfit.toFixed(2);
+
+            document.getElementById('eqOpening').innerText = '৳' + openingCapital.toFixed(2);
+            document.getElementById('eqNetProfit').innerText = '৳' + netProfit.toFixed(2);
+            document.getElementById('eqEnding').innerText = '৳' + endingEquity.toFixed(2);
+
+            const assetsList = document.getElementById('bsAssetsList');
+            const liabEquityList = document.getElementById('bsLiabEquityList');
+            assetsList.innerHTML = ''; liabEquityList.innerHTML = '';
+
+            let totalAssets = 0, totalLiab = 0;
+            for(let head in parentAssets) {
+                let val = parentAssets[head];
+                if(val !== 0) {
+                    totalAssets += val;
+                    assetsList.innerHTML += `<div class="flex justify-between"><span>${head}:</span><span class="font-semibold">৳${val.toFixed(2)}</span></div>`;
+                }
+            }
+            for(let head in parentLiabilities) {
+                let val = parentLiabilities[head];
+                if(val !== 0) {
+                    totalLiab += val;
+                    liabEquityList.innerHTML += `<div class="flex justify-between"><span>${head}:</span><span class="font-semibold">৳${val.toFixed(2)}</span></div>`;
+                }
+            }
+            liabEquityList.innerHTML += `<div class="flex justify-between border-t pt-2 mt-2 font-medium text-emerald-800"><span>সমাপনী মূলধন (Ending Equity):</span><span class="font-bold">৳${endingEquity.toFixed(2)}</span></div>`;
+            const totalLiabEquity = totalLiab + endingEquity;
+
+            document.getElementById('bsTotalAssets').innerText = '৳' + totalAssets.toFixed(2);
+            document.getElementById('bsTotalLiabEquity').innerText = '৳' + totalLiabEquity.toFixed(2);
+        }
+
+        function renderAccountsChart() {
+            const tbody = document.getElementById('accountsChartBody');
+            tbody.innerHTML = '';
+            accounts.forEach(acc => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-3"><span class="bg-slate-100 px-2 py-0.5 rounded text-xs font-semibold">${acc.type}</span></td>
+                        <td class="p-3 font-semibold text-slate-800">${acc.parentHead}</td>
+                        <td class="p-3 font-bold text-emerald-700">${acc.name}</td>
+                        <td class="p-3 text-center space-x-1 space-x-reverse">
+                            <button onclick="editAccount(${acc.id})" class="text-amber-600 hover:text-amber-800 text-xs px-2 py-1 bg-amber-50 rounded"><i class="fa-solid fa-pen"></i> এডিট</button>
+                            <button onclick="deleteAccount(${acc.id})" class="text-red-600 hover:text-red-800 text-xs px-2 py-1 bg-red-50 rounded"><i class="fa-solid fa-trash"></i> ডিলিট</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function clearFilter() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            renderJournalTable();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('text-emerald-400', 'border-b-2', 'border-emerald-400');
+                el.classList.add('text-slate-300');
+            });
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('text-emerald-400', 'border-b-2', 'border-emerald-400');
+                activeBtn.classList.remove('text-slate-300');
+            }
+        }
+
+        function downloadPDF(elementId, filename) {
+            const element = document.getElementById(elementId);
+            const opt = { margin: 0.5, filename: `${filename}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
